@@ -1,4 +1,5 @@
-// Copyright 2017-2018 Carl Pulley
+// Copyright 2018 Cake Solutions Limited
+// Copyright 2017 Carl Pulley
 
 package net.cakesolutions.testkit.logging.docker
 
@@ -22,8 +23,14 @@ object DockerLogSource extends LoggingSource[Json] {
 
   final case class ProcessTerminated(exitCode: Int) extends Exception(s"ProcessTerminated($exitCode)")
 
-  /** @inheritdoc */
-  override protected def subscriberPolling(id: String, subscriber: Subscriber[LogEvent[Json]], cancelP: Promise[Unit])(implicit scheduler: Scheduler): Unit = {
+  /** @see net.cakesolutions.testkit.logging.LoggingSource */
+  override protected def subscriberPolling(
+    id: String,
+    subscriber: Subscriber[LogEvent[Json]],
+    cancelP: Promise[Unit]
+  )(implicit
+    scheduler: Scheduler
+  ): Unit = {
     val decoder = new LogEventFormat(id)
     import decoder._
 

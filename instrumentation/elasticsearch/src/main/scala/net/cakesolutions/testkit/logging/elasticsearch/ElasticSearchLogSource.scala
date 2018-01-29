@@ -1,4 +1,4 @@
-// Copyright 2018 Carl Pulley
+// Copyright 2018 Cake Solutions Limited
 
 package net.cakesolutions.testkit.logging.elasticsearch
 
@@ -14,8 +14,14 @@ import net.cakesolutions.testkit.logging.{LogEvent, LoggingSource}
 
 object ElasticSearchLogSource extends LoggingSource[Json] {
 
-  /** @inheritdoc */
-  override protected def subscriberPolling(id: String, subscriber: Subscriber[LogEvent[Json]], cancelP: Promise[Unit])(implicit scheduler: Scheduler): Unit = {
+  /** @see net.cakesolutions.testkit.logging.LoggingSource */
+  override protected def subscriberPolling(
+    id: String,
+    subscriber: Subscriber[LogEvent[Json]],
+    cancelP: Promise[Unit]
+  )(implicit
+    scheduler: Scheduler
+  ): Unit = {
     ??? // TODO: needs implementing
   }
 }

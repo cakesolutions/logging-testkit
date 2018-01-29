@@ -1,4 +1,5 @@
-// Copyright 2017-2018 Carl Pulley
+// Copyright 2018 Cake Solutions Limited
+// Copyright 2017 Carl Pulley
 
 package net.cakesolutions.testkit.logging.docker.formats
 

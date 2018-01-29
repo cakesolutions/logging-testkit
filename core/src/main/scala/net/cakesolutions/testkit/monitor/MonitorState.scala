@@ -1,3 +1,5 @@
+// Copyright 2018 Cake Solutions Limited
+
 package net.cakesolutions.testkit.monitor
 
 import scala.concurrent.duration.Deadline

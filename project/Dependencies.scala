@@ -1,4 +1,5 @@
-// Copyright 2016-2018 Carl Pulley
+// Copyright 2018 Cake Solutions Limited
+// Copyright 2016-2017 Carl Pulley
 
 import sbt.Keys._
 import sbt._

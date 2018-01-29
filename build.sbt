@@ -1,11 +1,12 @@
-// Copyright 2018 Carl Pulley
+// Copyright 2018 Cake Solutions Limited
 
 import Dependencies._
 
-//enablePlugins(GhpagesPlugin)
 enablePlugins(GitBranchPrompt)
 enablePlugins(GitVersioning)
 enablePlugins(SiteScaladocPlugin)
+
+crossScalaVersions := Seq("2.11.12", "2.12.4")
 
 Publish.settings
 
