@@ -16,6 +16,8 @@ package object monitor {
   import Configuration._
   import Interactions._
 
+  private val logger = Logger(Logging.name)
+
   /**
     * Type for describing IOAutomata state machines using partial functions.
     *
@@ -54,38 +56,50 @@ package object monitor {
       transition: Behaviour[IOState, Event]
     ): Observable[ActionOut[Notify]] = {
       Observable.merge[EventInternal[Event]](upstream.asEventInternal, clock)
-        .debugLog("IN")
         .materialize
         .scan[MonitorState[IOState]](RunningState(initialState).timeout(initialTimeout).overall(overallTimeout)) {
-          case (current: RunningState[IOState], OnNext(event: Observe[Event]))
+          case (current: RunningState[IOState], obs@OnNext(event: Observe[Event]))
             if transition.isDefinedAt(current.state) &&
               transition(current.state).isDefinedAt(event) =>
-            next(transition)(current.state, event)
-          case (current: RunningState[IOState], OnNext(Tick))
+            val result = next(transition)(current, event)
+            logger.debug(s"monitor transition: $current -< $obs >-> $result")
+            result
+          case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.stateTimeout.exists(_.isOverdue()) &&
               transition.isDefinedAt(current.state) &&
               transition(current.state).isDefinedAt(StateTimeout) =>
-            next(transition)(current.state, StateTimeout)
-          case (current: RunningState[IOState], OnNext(Tick))
+            val result = next(transition)(current, StateTimeout)
+            logger.debug(s"monitor transition: $current -< $obs >-> $result")
+            result
+          case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.overallTimeout.exists(_.isOverdue()) &&
               transition.isDefinedAt(current.state) &&
               transition(current.state).isDefinedAt(MonitorTimeout) =>
-            next(transition)(current.state, MonitorTimeout)
-          case (current: RunningState[IOState], OnComplete) =>
+            val result = next(transition)(current, MonitorTimeout)
+            logger.debug(s"monitor transition: $current -< $obs >-> $result")
+            result
+          case (current: RunningState[IOState], obs@OnComplete) =>
+            logger.debug(s"monitor transition: $current -< $obs >-> COMPLETE")
             complete(current.state)
-          case (current: RunningState[IOState], OnNext(event: Observe[Event])) =>
+          case (current: RunningState[IOState], obs@OnNext(event: Observe[Event])) =>
+            logger.debug(s"monitor transition: $current -< $obs >-> ERROR")
             error(current.state, TransitionFailure(event))
-          case (current: RunningState[IOState], OnError(exn)) =>
+          case (current: RunningState[IOState], obs@OnError(exn)) =>
+            logger.debug(s"monitor transition: $current -< $obs >-> ERROR")
             error(current.state, exn)
-          case (current: RunningState[IOState], OnNext(Tick))
+          case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.stateTimeout.exists(_.isOverdue()) =>
+            logger.debug(s"deadline transition: $current -< $obs >-> ERROR")
             error(current.state, StateTimeout)
-          case (current: RunningState[IOState], OnNext(Tick))
+          case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.overallTimeout.exists(_.isOverdue()) =>
+            logger.debug(s"deadline transition: $current -< $obs >-> ERROR")
             error(current.state, MonitorTimeout)
-          case (current: RunningState[IOState], OnNext(Tick)) =>
+          case (current: RunningState[IOState], obs@OnNext(Tick)) =>
+            logger.debug(s"deadline transition: $current -< $obs >-> $current")
             current
-          case (current: ShutdownState[IOState], _) =>
+          case (current: ShutdownState[IOState], obs) =>
+            logger.debug(s"monitor transition: $current -< $obs >-> SHUTDOWN")
             ShutdownState(current.state)
         }
         .flatMap {
@@ -95,44 +109,29 @@ package object monitor {
             state.actions
         }
         .dematerialize
-        .debugLog("OUT")
     }
 
-    private def next(transition: Behaviour[IOState, Event])(state: IOState, event: EventIn[Event]): MonitorState[IOState] = {
-      transition(state)(event) match {
+    private def next(transition: Behaviour[IOState, Event])(state: RunningState[IOState], event: EventIn[Event]): MonitorState[IOState] = {
+      transition(state.state)(event) match {
         case Goto(nextState, duration, action) =>
-          nextState.output(action).timeout(duration)
+          state.copy(state = nextState).output(action).timeout(duration)
         case Stay(action) =>
           state.output(action)
         case Stop(action) =>
-          ShutdownState(state, actions = Observable(OnNext(Observe(action)), OnComplete))
+          ShutdownState(state.state, actions = Observable(OnNext(Observe(action)), OnComplete))
       }
     }
 
-    private def error(state: IOState, exn: Throwable): MonitorState[IOState] = {
+    private def error(state: IOState, exn: Throwable): ShutdownState[IOState] = {
       ShutdownState(state, actions = Observable(OnError(exn)))
     }
 
-    private def complete(state: IOState): MonitorState[IOState] = {
+    private def complete(state: IOState): ShutdownState[IOState] = {
       ShutdownState(state, actions = Observable(OnComplete))
     }
   }
 
   private implicit class EventInMap[Event](upstream: Observable[Event]) {
-    private val logger = Logger(Logging.name)
-
-    def debugLog(tag: String): Observable[Event] = {
-      upstream
-        .materialize
-        .zipWithIndex
-        .map {
-          case (event, index) =>
-            logger.debug(s"$tag-$index: ${event.toString}")
-            event
-        }
-        .dematerialize
-    }
-
     def asEventInternal: Observable[EventInternal[Event]] = {
       upstream.map { event: Event =>
           Observe(event)
@@ -140,28 +139,20 @@ package object monitor {
     }
   }
 
-  private implicit class TransitionBehaviour[IOState](state: IOState) {
-    def output(emit: Option[Notify]): MonitorState[IOState] = emit match {
+  private implicit class TimeoutBehaviour[IOState](state: RunningState[IOState]) {
+    def output(emit: Option[Notify]): RunningState[IOState] = emit match {
       case Some(action) =>
-        RunningState(state, actions = Observable(OnNext(Observe[Notify](action))))
+        RunningState(state.state, overallTimeout = state.overallTimeout, actions = Observable(OnNext(Observe[Notify](action))))
       case None =>
-        RunningState(state)
-    }
-  }
-
-  private implicit class TimeoutBehaviour[IOState](state: MonitorState[IOState]) {
-    def timeout(timeout: Option[FiniteDuration]): MonitorState[IOState] = state match {
-      case current: RunningState[IOState] =>
-        current.copy(stateTimeout = timeout.map(Deadline(_)))
-      case current: ShutdownState[IOState] =>
-        current
+        RunningState(state.state, overallTimeout = state.overallTimeout)
     }
 
-    def overall(timeout: Option[FiniteDuration]): MonitorState[IOState] = state match {
-      case current: RunningState[IOState] =>
-        current.copy(overallTimeout = timeout.map(Deadline(_)))
-      case current: ShutdownState[IOState] =>
-        current
+    def timeout(timeout: Option[FiniteDuration]): RunningState[IOState] = {
+      state.copy(stateTimeout = timeout.map(_.fromNow))
+    }
+
+    def overall(timeout: Option[FiniteDuration]): RunningState[IOState] = {
+      state.copy(overallTimeout = timeout.map(_.fromNow))
     }
   }
 }
