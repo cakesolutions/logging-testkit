@@ -12,6 +12,9 @@ object CommonProject {
   val settings =
     Seq(
       organization := "net.cakesolutions",
+      // The following values need to be synced with those in Jenkinsfile
+      crossScalaVersions := Seq("2.11.12", "2.12.4"),
+      scalaVersion := crossScalaVersions.value.head,
       scalacOptions in Compile ++= Seq(
         "-encoding", "UTF-8",
         "-feature",

@@ -6,7 +6,9 @@ enablePlugins(GitBranchPrompt)
 enablePlugins(GitVersioning)
 enablePlugins(SiteScaladocPlugin)
 
+// The following values need to be synced with those in Jenkinsfile
 crossScalaVersions := Seq("2.11.12", "2.12.4")
+scalaVersion := crossScalaVersions.value.head
 
 Publish.settings
 
@@ -34,6 +36,7 @@ lazy val core = project.in(file("core"))
 
 lazy val docker = project.in(file("instrumentation/docker"))
   .dependsOn(core % "compile->compile; test->test")
+  .settings(CommonProject.settings)
   .settings(
     name := "logging-testkit-docker",
     coverageMinimum := 0
@@ -41,6 +44,7 @@ lazy val docker = project.in(file("instrumentation/docker"))
 
 lazy val elasticsearch = project.in(file("instrumentation/elasticsearch"))
   .dependsOn(core % "compile->compile; test->test")
+  .settings(CommonProject.settings)
   .settings(
     name := "logging-testkit-elasticsearch",
     libraryDependencies += aws.logs,

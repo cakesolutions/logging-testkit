@@ -19,15 +19,15 @@ object Configuration {
     /**
       * Duration that we wait for before allowing monitor timeout's to execute.
       */
-    val delay: FiniteDuration = sys.env.get("DELAY").withDefault[FiniteDuration](0.seconds)
+    val delay: FiniteDuration = sys.env.get("TIMEOUT_DELAY").withDefault(0.seconds)
     /**
       * Periodicity with which monitor timeouts are checked for expiration.
       */
-    val period: FiniteDuration = sys.env.get("PERIOD").withDefault[FiniteDuration](100.milliseconds)
+    val period: FiniteDuration = sys.env.get("TIMEOUT_PERIOD").withDefault(100.milliseconds)
   }
 
   private implicit class ConfigurationHelper(value: Option[String]) {
-    def withDefault[FiniteDuration](default: FiniteDuration): FiniteDuration = {
+    def withDefault(default: FiniteDuration): FiniteDuration = {
       value.map(Duration(_)).collect { case d: FiniteDuration => d }.getOrElse(default)
     }
   }
