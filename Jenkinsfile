@@ -8,7 +8,7 @@ pipeline {
       steps {
         ansiColor('xterm') {
           script {
-            # The following values need to be synced with those in build.sbt and CommonProject.scala
+            // The following values need to be synced with those in build.sbt and CommonProject.scala
             def crossScalaVersions = ["2.11.12", "2.12.4"]
             def builds = [:]
             crossScalaVersions.each { SCALA_VERSION ->
