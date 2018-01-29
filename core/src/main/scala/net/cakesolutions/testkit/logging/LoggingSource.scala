@@ -13,28 +13,30 @@ import monix.reactive.{Observable, OverflowStrategy}
 import monix.reactive.observers.Subscriber
 
 /**
-  * TODO:
+  * Interface for defining logging sources.
+  *
+  * @tparam A type of the unmarshalled logging instance
   */
 trait LoggingSource[A] {
 
   private val log = Logger("LoggingTestkit")
 
   /**
-    * TODO:
+    * Primary interface method that specific logging sources will need to implement.
     *
-    * @param id
-    * @param subscriber
-    * @param cancelP
-    * @param scheduler
+    * @param id identifies the Docker container from which log events are consumed
+    * @param subscriber subscriber that is to receive logging events
+    * @param cancelP promise used to communicate that the subscriber has cancelled their subscription
+    * @param scheduler (implicit) scheduler that the subscriber uses for running polling events on
     */
   protected def subscriberPolling(id: String, subscriber: Subscriber[LogEvent[Json]], cancelP: Promise[Unit])(implicit scheduler: Scheduler): Unit
 
   /**
-    * TODO:
+    * For a given Docker container, wrap container logging as an observable.
     *
-    * @param id
-    * @param scheduler
-    * @return
+    * @param id identifies the Docker container from which log events are consumed
+    * @param scheduler (implicit) scheduler that the subscriber uses for running polling events on
+    * @return observable of JSON logging events
     */
   final def source(id: String)(implicit scheduler: Scheduler): Observable[LogEvent[Json]] =
     Observable.create[LogEvent[Json]](OverflowStrategy.Unbounded) { subscriber =>

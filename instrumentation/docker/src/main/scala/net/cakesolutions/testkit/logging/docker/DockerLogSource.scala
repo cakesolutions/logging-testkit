@@ -13,12 +13,13 @@ import io.circe.parser._
 import monix.execution.Scheduler
 import monix.reactive.observers.Subscriber
 
+import net.cakesolutions.testkit.config.Configuration.Logging
 import net.cakesolutions.testkit.logging.{LogEvent, LoggingSource}
 import net.cakesolutions.testkit.logging.docker.formats.LogEventFormat
 
 object DockerLogSource extends LoggingSource[Json] {
 
-  private val log = Logger("LoggingTestkit")
+  private val log = Logger(Logging.name)
   private val dockerLogsCmd = Seq("docker", "logs", "-f", "-t")
 
   final case class ProcessTerminated(exitCode: Int) extends Exception(s"ProcessTerminated($exitCode)")

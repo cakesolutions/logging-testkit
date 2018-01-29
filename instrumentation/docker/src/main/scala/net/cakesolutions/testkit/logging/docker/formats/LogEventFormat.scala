@@ -11,6 +11,7 @@ import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import io.circe.parser.parse
 
+import net.cakesolutions.testkit.config.Configuration.Logging
 import net.cakesolutions.testkit.logging.LogEvent
 
 /**
@@ -19,7 +20,7 @@ import net.cakesolutions.testkit.logging.LogEvent
   * @param id
   */
 class LogEventFormat(id: String) {
-  private val log = Logger("LoggingTestkit")
+  private val log = Logger(Logging.name)
   private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.nnnnnnnnnX")
 
   implicit val encodeLogEvent: Encoder[LogEvent[Json]] = Encoder.encodeString.contramap[LogEvent[Json]] { logEvent =>

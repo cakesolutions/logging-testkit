@@ -6,23 +6,23 @@ package net.cakesolutions.testkit.monitor
 object Interactions {
 
   /**
-    * Observed events that monitors will observe and react to.
+    * Input events that IOAutomata monitors will consume.
     *
     * @tparam Event type of event that we are to observe
     */
   sealed trait EventIn[+Event]
 
   /**
-    * TODO:
+    * Internal events.
     *
-    * @tparam Event
+    * @tparam Event type of event that we are to observe
     */
   sealed trait EventInternal[+Event]
 
   /**
-    * TODO:
+    * Output actions.
     *
-    * @tparam Event
+    * @tparam Event type of event that we are to observe
     */
   sealed trait ActionOut[+Event]
 
@@ -34,33 +34,30 @@ object Interactions {
     */
   final case class Observe[Event](event: Event) extends EventIn[Event] with EventInternal[Event] with ActionOut[Event]
 
-  /**
-    * TODO:
-    */
   private[monitor] case object Tick extends EventInternal[Nothing]
 
   /**
-    * We timed out whilst waiting for an event to flow in some state.
+    * The IOAutomata monitor timed out whilst waiting in some state.
     */
   case object StateTimeout extends Exception("StateTimeout") with EventIn[Nothing] with EventInternal[Nothing] with ActionOut[Nothing]
 
   /**
-    * TODO:
+    * The IOAutomata monitor has exceeded its overall timeout.
     */
   case object MonitorTimeout extends Exception("MonitorTimeout") with EventIn[Nothing] with EventInternal[Nothing] with ActionOut[Nothing]
 
   /**
-    * TODO:
+    * Error signal indicating that the IOAutomata was not defined for a given event.
     *
-    * @param event
+    * @param event event that the IOAutomata was not defined for
     * @tparam Event type of event that we are to observe
     */
   final case class TransitionFailure[Event](event: Event) extends Exception(s"TransitionFailure($event)") with ActionOut[Nothing]
 
   /**
-    * TODO:
+    * Error signal wrapping uncaught exceptions.
     *
-    * @param exn
+    * @param exn throwable that was caught
     */
   final case class UnexpectedException(exn: Throwable) extends Exception(s"UnexpectedException($exn)") with ActionOut[Nothing]
 }

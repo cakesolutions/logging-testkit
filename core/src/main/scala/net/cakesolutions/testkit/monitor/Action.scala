@@ -6,21 +6,26 @@ package net.cakesolutions.testkit.monitor
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * TODO:
+  * Type of action that an IOAutomata may perform on each of its transitions.
   *
-  * @tparam IOState
+  * @tparam IOState IOAutomata state type
   */
 sealed trait Action[IOState] {
+  /**
+    * Notification event that is to be emitted.
+    *
+    * @return (optional) notification event that is to be emitted
+    */
   def emit: Option[Notify]
 }
 
 /**
-  * TODO:
+  * Used should the IOAutomata need to transition to another state.
   *
-  * @param state
-  * @param forMax
-  * @param emit
-  * @tparam IOState
+  * @param state state IOAutomata will transition to
+  * @param forMax (optional) time we can stay in the next state for
+  * @param emit (optional) action that will be emitted should we transition to the next state
+  * @tparam IOState IOAutomata state type
   */
 final case class Goto[IOState](state: IOState, forMax: Option[FiniteDuration] = None, emit: Option[Notify] = None) extends Action[IOState]
 object Goto {
@@ -38,10 +43,10 @@ object Goto {
 }
 
 /**
-  * TODO:
+  * Used should the IOAutomata need to remain or stay in the current state.
   *
-  * @param emit
-  * @tparam IOState
+  * @param emit (optional) action that will be emitted should we stay in the current state
+  * @tparam IOState IOAutomata state type
   */
 final case class Stay[IOState](emit: Option[Notify] = None) extends Action[IOState]
 object Stay {
@@ -51,10 +56,11 @@ object Stay {
 }
 
 /**
-  * TODO:
+  * Used should the IOAutomata need to terminate or stop in the current state. The success or failure
+  * of this termination is determined by the notification action that is emitted.
   *
-  * @param toEmit
-  * @tparam IOState
+  * @param toEmit action that will be emitted should we terminate or stop
+  * @tparam IOState IOAutomata state type
   */
 final case class Stop[IOState](toEmit: Notify) extends Action[IOState] {
   override val emit = Some(toEmit)

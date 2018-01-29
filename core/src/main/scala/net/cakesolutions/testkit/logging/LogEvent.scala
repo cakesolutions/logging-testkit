@@ -6,11 +6,11 @@ package net.cakesolutions.testkit.logging
 import java.time.ZonedDateTime
 
 /**
-  * TODO:
+  * Log event that has been parsed and unmarshalled into a type instance.
   *
-  * @param time
-  * @param image
-  * @param message
-  * @tparam A
+  * @param time date and time for the logging event
+  * @param image identifier for the Docker container from which logging has originated
+  * @param message unmarshalled instance of the parsed logging event
+  * @tparam A type of the unmarshalled logging instance
   */
 final case class LogEvent[A](time: ZonedDateTime, image: String, message: A)
