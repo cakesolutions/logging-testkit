@@ -12,6 +12,7 @@ import scala.util.control.NonFatal
 import cats.syntax.either._
 import com.typesafe.scalalogging.Logger
 import io.circe._
+
 import net.cakesolutions.testkit.config.Configuration.Logging
 import net.cakesolutions.testkit.logging.LogEvent
 
@@ -23,7 +24,7 @@ import net.cakesolutions.testkit.logging.LogEvent
 class LogEventFormat(id: String) {
   private val log = Logger(Logging.name)
   private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-  private val logLineRE = """^\s*([^\s]+)\s+(.*)\s*\z""".r
+  private val logLineRE = """^([^\s]+)\s+(.*)\z""".r
 
   /**
     * Parse a log line into a JSON logging event.
@@ -42,13 +43,21 @@ class LogEventFormat(id: String) {
             case Some(logLineMatch) =>
               val time = logLineMatch.group(1)
               val message = logLineMatch.group(2).trim
-              for {
-                json <- parser.parse(message)
-              } yield LogEvent[Json](ZonedDateTime.parse(time, formatter), id, json)
+              (for {
+                 json <- parser.parse(message)
+               } yield LogEvent[Json](ZonedDateTime.parse(time, formatter), id, json)
+              ).recover {
+                case NonFatal(_) =>
+                  LogEvent[Json](ZonedDateTime.parse(time, formatter), id, Json.fromString(message))
+              }
             case None =>
-              for {
-                json <- parser.parse(line)
-              } yield LogEvent[Json](ZonedDateTime.now(ZoneOffset.UTC), id, json)
+              (for {
+                 json <- parser.parse(line)
+               } yield LogEvent[Json](ZonedDateTime.now(ZoneOffset.UTC), id, json)
+              ).recover {
+                case NonFatal(_) =>
+                  LogEvent[Json](ZonedDateTime.now(ZoneOffset.UTC), id, Json.fromString(line))
+              }
           }
         } catch {
           case NonFatal(exn) =>
