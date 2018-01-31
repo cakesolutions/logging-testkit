@@ -177,7 +177,6 @@ class MonitorTest extends FreeSpec with Matchers with GeneratorDrivenPropertyChe
     }
   }
 
-  // FIXME: surely we should be able to classify failure modes here?
   "Event observable closes early" - {
     "with no events flowing" in {
       val early: Behaviour[Int, String] = {
