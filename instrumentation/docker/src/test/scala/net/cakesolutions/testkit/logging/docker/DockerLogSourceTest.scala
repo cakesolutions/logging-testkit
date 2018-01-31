@@ -6,7 +6,6 @@ import java.io.InputStream
 
 import scala.concurrent.duration._
 import scala.io.Source
-import scala.sys.process.Process
 
 import io.circe.Json
 import monix.execution.Scheduler.Implicits.global
@@ -41,18 +40,5 @@ class DockerLogSourceTest extends FreeSpec with Matchers with GeneratorDrivenPro
     val testLogSource = new TestDockerLogSource(exitCode)
 
     testLogSource.source("test").materialize should observe[Notification[LogEvent[Json]]](OnError(ProcessTerminated(exitCode)))
-  }
-}
-
-class TestDockerLogSource(exitCode: Int, logLine: String*) extends BaseDockerLogSource {
-  override def pollingProcess(id: String, handler: String => Unit): Process = {
-    new Process {
-      override def exitValue(): Int = {
-        logLine.foreach(handler)
-        exitCode
-      }
-
-      override def destroy(): Unit = {}
-    }
   }
 }
