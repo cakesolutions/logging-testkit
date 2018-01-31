@@ -82,6 +82,7 @@ trait BaseDockerLogSource extends LoggingSource[Json] {
   }
 }
 
+// $COVERAGE-OFF$
 object DockerLogSource extends BaseDockerLogSource {
   private val dockerLogsCmd = Seq("docker", "logs", "-f", "-t")
 
@@ -97,3 +98,4 @@ object DockerLogSource extends BaseDockerLogSource {
     Process(dockerLogsCmd :+ id).run(ProcessLogger(handler, handler))
   }
 }
+// $COVERAGE-ON$
