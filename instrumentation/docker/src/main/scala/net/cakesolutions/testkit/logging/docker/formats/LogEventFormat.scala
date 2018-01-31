@@ -6,51 +6,71 @@ package net.cakesolutions.testkit.logging.docker.formats
 import java.time.{ZonedDateTime, ZoneOffset}
 import java.time.format.DateTimeFormatter
 
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import cats.syntax.either._
 import com.typesafe.scalalogging.Logger
-import io.circe.{Decoder, DecodingFailure, Encoder, Json}
-import io.circe.parser.parse
-
+import io.circe._
 import net.cakesolutions.testkit.config.Configuration.Logging
 import net.cakesolutions.testkit.logging.LogEvent
 
 /**
-  * TODO:
+  * Utility methods for transforming between log lines and JSON log events.
   *
-  * @param id
+  * @param id identifies source of log lines
   */
 class LogEventFormat(id: String) {
   private val log = Logger(Logging.name)
-  private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.nnnnnnnnnX")
+  private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+  private val logLineRE = """^\s*([^\s]+)\s+(.*)\s*\z""".r
 
-  implicit val encodeLogEvent: Encoder[LogEvent[Json]] = Encoder.encodeString.contramap[LogEvent[Json]] { logEvent =>
-    s"${logEvent.time.format(formatter)} ${logEvent.message}"
+  /**
+    * Parse a log line into a JSON logging event.
+    *
+    * @param rawLine log line
+    * @return None if the log line is empty, otherwise the result of parsing the log line
+    */
+  def parse(rawLine: String): Option[Either[ParsingFailure, LogEvent[Json]]] = {
+    val line = rawLine.trim
+    log.debug(s"$id $line")
+
+    if (line.nonEmpty) {
+      Some(
+        try {
+          logLineRE.findFirstMatchIn(line) match {
+            case Some(logLineMatch) =>
+              val time = logLineMatch.group(1)
+              val message = logLineMatch.group(2).trim
+              for {
+                json <- parser.parse(message)
+              } yield LogEvent[Json](ZonedDateTime.parse(time, formatter), id, json)
+            case None =>
+              for {
+                json <- parser.parse(line)
+              } yield LogEvent[Json](ZonedDateTime.now(ZoneOffset.UTC), id, json)
+          }
+        } catch {
+          case NonFatal(exn) =>
+            exn.printStackTrace()
+            Left(ParsingFailure("Unexpected exception", exn))
+        }
+      )
+    } else {
+      None
+    }
   }
 
-  implicit val decodeLogEvent: Decoder[LogEvent[Json]] = Decoder.decodeString.emap { rawLine =>
-    Either.catchNonFatal {
-      val line = rawLine.trim
-      log.debug(s"$id $line")
+  /**
+    * Converts a JSON log event to a log line.
+    *
+    * @param logEvent JSON log event
+    * @return log line if successful, otherwise the failure cause
+    */
+  def asString(logEvent: LogEvent[Json]): Try[String] = Try {
+    val datetime = formatter.format(logEvent.time)
+    val message = logEvent.message.noSpaces
 
-      if (line.nonEmpty) {
-        // 2016-06-11T10:10:00.154101534Z log-message
-        val logLineRE = "^\\s*(\\d+\\-\\d+\\-\\d+T\\d+:\\d+:\\d+\\.\\d+Z)\\s+(.*)\\s*\\z".r
-        val logLineMatch = logLineRE.findFirstMatchIn(line)
-
-        if (logLineMatch.isDefined) {
-          val time = logLineMatch.get.group(1)
-          val message = logLineMatch.get.group(2).trim
-          for {
-            json <- parse(message)
-          } yield LogEvent[Json](ZonedDateTime.parse(time, formatter), id, json)
-        } else {
-          for {
-            json <- parse(line)
-          } yield LogEvent[Json](ZonedDateTime.now(ZoneOffset.UTC), id, json)
-        }
-      } else {
-        Left(DecodingFailure("", List()))
-      }
-    }.joinRight.leftMap(_.toString)
+    s"$datetime $message"
   }
 }

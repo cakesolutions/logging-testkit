@@ -56,50 +56,51 @@ package object monitor {
       transition: Behaviour[IOState, Event]
     ): Observable[ActionOut[Notify]] = {
       Observable.merge[EventInternal[Event]](upstream.asEventInternal, clock)
+        .debugLog("IN")
         .materialize
         .scan[MonitorState[IOState]](RunningState(initialState).timeout(initialTimeout).overall(overallTimeout)) {
           case (current: RunningState[IOState], obs@OnNext(event: Observe[Event]))
             if transition.isDefinedAt(current.state) &&
               transition(current.state).isDefinedAt(event) =>
             val result = next(transition)(current, event)
-            logger.debug(s"monitor transition: $current -< $obs >-> $result")
+            logger.trace(s"monitor: $obs transitions from $current to $result")
             result
           case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.stateTimeout.exists(_.isOverdue()) &&
               transition.isDefinedAt(current.state) &&
               transition(current.state).isDefinedAt(StateTimeout) =>
             val result = next(transition)(current, StateTimeout)
-            logger.debug(s"monitor transition: $current -< $obs >-> $result")
+            logger.trace(s"monitor: $obs transitions from $current to $result")
             result
           case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.overallTimeout.exists(_.isOverdue()) &&
               transition.isDefinedAt(current.state) &&
               transition(current.state).isDefinedAt(MonitorTimeout) =>
             val result = next(transition)(current, MonitorTimeout)
-            logger.debug(s"monitor transition: $current -< $obs >-> $result")
+            logger.trace(s"monitor: $obs transitions from $current to $result")
             result
           case (current: RunningState[IOState], obs@OnComplete) =>
-            logger.debug(s"monitor transition: $current -< $obs >-> COMPLETE")
+            logger.trace(s"monitor: $obs transitions from $current to COMPLETE")
             complete(current.state)
           case (current: RunningState[IOState], obs@OnNext(event: Observe[Event])) =>
-            logger.debug(s"monitor transition: $current -< $obs >-> ERROR")
+            logger.trace(s"monitor: $obs transitions from $current to ERROR")
             error(current.state, TransitionFailure(event))
           case (current: RunningState[IOState], obs@OnError(exn)) =>
-            logger.debug(s"monitor transition: $current -< $obs >-> ERROR")
+            logger.trace(s"monitor: $obs transitions from $current to ERROR")
             error(current.state, exn)
           case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.stateTimeout.exists(_.isOverdue()) =>
-            logger.debug(s"deadline transition: $current -< $obs >-> ERROR")
+            logger.trace(s"deadline: $obs transitions from $current to ERROR")
             error(current.state, StateTimeout)
           case (current: RunningState[IOState], obs@OnNext(Tick))
             if current.overallTimeout.exists(_.isOverdue()) =>
-            logger.debug(s"deadline transition: $current -< $obs >-> ERROR")
+            logger.trace(s"deadline: $obs transitions from $current to ERROR")
             error(current.state, MonitorTimeout)
           case (current: RunningState[IOState], obs@OnNext(Tick)) =>
-            logger.debug(s"deadline transition: $current -< $obs >-> $current")
+            logger.trace(s"deadline: $obs transitions from $current to ERROR")
             current
           case (current: ShutdownState[IOState], obs) =>
-            logger.debug(s"monitor transition: $current -< $obs >-> SHUTDOWN")
+            logger.trace(s"monitor: $obs transitions from $current to SHUTDOWN")
             ShutdownState(current.state)
         }
         .flatMap {
@@ -109,6 +110,7 @@ package object monitor {
             state.actions
         }
         .dematerialize
+        .debugLog("OUT")
     }
 
     private def next(transition: Behaviour[IOState, Event])(state: RunningState[IOState], event: EventIn[Event]): MonitorState[IOState] = {
@@ -132,6 +134,18 @@ package object monitor {
   }
 
   private implicit class EventInMap[Event](upstream: Observable[Event]) {
+    def debugLog(tag: String): Observable[Event] = {
+      upstream
+        .materialize
+        .zipWithIndex
+        .map {
+          case (event, index) =>
+            logger.debug(s"$tag-$index: $event")
+            event
+        }
+        .dematerialize
+    }
+
     def asEventInternal: Observable[EventInternal[Event]] = {
       upstream.map { event: Event =>
           Observe(event)

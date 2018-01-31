@@ -9,7 +9,6 @@ import scala.util.control.NonFatal
 
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
-import io.circe.parser._
 import monix.execution.Scheduler
 import monix.reactive.observers.Subscriber
 
@@ -33,20 +32,21 @@ object DockerLogSource extends LoggingSource[Json] {
     scheduler: Scheduler
   ): Unit = {
     val decoder = new LogEventFormat(id)
-    import decoder._
 
     val handleLogEvent: String => Unit = { event =>
       if (! cancelP.isCompleted) {
-        decode[LogEvent[Json]](event) match {
-          case Right(value: LogEvent[Json]) =>
+        decoder.parse(event) match {
+          case Some(Right(value: LogEvent[Json])) =>
             try {
               subscriber.onNext(value)
             } catch {
               case NonFatal(exn) =>
                 log.error("Unexpected exception sending data to a subscriber", exn)
             }
-          case Left(exn) =>
+          case Some(Left(exn)) =>
             subscriber.onError(exn)
+          case None =>
+            // Empty log entry - so nothing to do
         }
       }
     }

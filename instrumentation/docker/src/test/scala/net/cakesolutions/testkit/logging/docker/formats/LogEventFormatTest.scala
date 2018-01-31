@@ -2,23 +2,24 @@
 
 package net.cakesolutions.testkit.logging.docker.formats
 
-import io.circe.Json
-import io.circe.parser._
-import org.scalatest.{FreeSpec, Matchers}
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import scala.util.Success
 
 import net.cakesolutions.testkit.generators.TestGenerators.logEventGen
-import net.cakesolutions.testkit.logging.LogEvent
+import org.scalatest.{FreeSpec, Inside, Matchers}
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
-class LogEventFormatTest extends FreeSpec with Matchers with GeneratorDrivenPropertyChecks {
+class LogEventFormatTest extends FreeSpec with Matchers with Inside with GeneratorDrivenPropertyChecks {
 
   val decoder = new LogEventFormat("test")
-  import decoder._
 
-  // FIXME: deal with test failure!
-  "Can serialise and deserialise logging events" ignore {
+  "Can serialise and deserialise logging events" in {
     forAll(logEventGen()) { logEvent =>
-      decode[LogEvent[Json]](encodeLogEvent(logEvent).toString()) shouldEqual logEvent
+      inside (decoder.asString(logEvent).map(decoder.parse)) {
+        case Success(Some(Right(event))) =>
+          event.image shouldEqual logEvent.image
+          event.message shouldEqual logEvent.message
+          event.time.toInstant shouldEqual logEvent.time.toInstant
+      }
     }
   }
 }
