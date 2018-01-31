@@ -28,8 +28,8 @@ object CommonProject {
         "-Ywarn-numeric-widen",
         "-Xfuture",
         "-Ywarn-unused-import",
-        "-Ypartial-unification"//,
-        //"-Xfatal-warnings"
+        "-Ypartial-unification",
+        "-Xfatal-warnings"
       ),
       scalacOptions in (Compile, doc) ++= {
         val nm = (name in(Compile, doc)).value

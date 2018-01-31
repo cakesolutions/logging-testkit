@@ -30,11 +30,6 @@ trait BaseDockerLogSource extends LoggingSource[Json] {
     */
   protected def pollingProcess(id: String, handler: String => Unit): Process
 
-  /**
-    *  @see net.cakesolutions.testkit.logging.LoggingSource
-    *
-    *  @throws ProcessTerminated thrown when the underlying process exits unexpectedly
-    */
   override protected def subscriberPolling(
     id: String,
     subscriber: Subscriber[LogEvent[Json]],
