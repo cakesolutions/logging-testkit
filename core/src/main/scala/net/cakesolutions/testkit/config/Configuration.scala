@@ -4,6 +4,8 @@ package net.cakesolutions.testkit.config
 
 import scala.concurrent.duration._
 
+import net.cakesolutions.testkit.config.Environment.Optional
+
 /**
   * Library configuration.
   */
@@ -17,13 +19,14 @@ object Configuration {
 
   object Timeout {
     /**
-      * Duration that we wait for before allowing monitor timeout's to execute.
+      * @see net.cakesolutions.testkit.config.Environment.Optional.TIMEOUT_DELAY
       */
-    val delay: FiniteDuration = sys.env.get("TIMEOUT_DELAY").withDefault(0.seconds)
+    val delay: FiniteDuration = Optional.TIMEOUT_DELAY.withDefault(0.seconds)
+
     /**
-      * Periodicity with which monitor timeouts are checked for expiration.
+      * @see net.cakesolutions.testkit.config.Environment.Optional.TIMEOUT_PERIOD
       */
-    val period: FiniteDuration = sys.env.get("TIMEOUT_PERIOD").withDefault(100.milliseconds)
+    val period: FiniteDuration = Optional.TIMEOUT_PERIOD.withDefault(100.milliseconds)
   }
 
   private implicit class ConfigurationHelper(value: Option[String]) {
