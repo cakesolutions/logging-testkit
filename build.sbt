@@ -39,7 +39,7 @@ lazy val docker = project.in(file("instrumentation/docker"))
   .settings(CommonProject.settings)
   .settings(
     name := "logging-testkit-docker",
-    coverageMinimum := 80
+    coverageMinimum := 70
   )
 
 lazy val elasticsearch = project.in(file("instrumentation/elasticsearch"))
