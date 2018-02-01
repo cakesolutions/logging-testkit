@@ -20,9 +20,9 @@ pipeline {
                 allowMissing         : false,
                 alwaysLinkToLastBuild: false,
                 keepAll              : true,
-                reportDir            : 'target/scala-$scalaVersion/scoverage-report',
-                reportFiles          : 'index.html',
-                reportName           : 'Scala $scalaVersion Unit Test Coverage Report'
+                reportDir            : "target/scala-$scalaVersion/scoverage-report",
+                reportFiles          : "index.html",
+                reportName           : "Scala $scalaVersion Unit Test Coverage Report"
               ])
             }
           }
