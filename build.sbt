@@ -20,6 +20,7 @@ lazy val core = project.in(file("core"))
   .settings(ScalaDoc.settings)
   .settings(
     name := "logging-testkit",
+    publishArtifact in (Test, packageBin) := true,
     libraryDependencies ++= Seq(
       circe.core,
       circe.generic,

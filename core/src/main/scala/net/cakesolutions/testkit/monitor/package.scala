@@ -113,6 +113,13 @@ package object monitor {
         .debugLog("OUT")
     }
 
+    /**
+      * @see net.cakesolutions.testkit.monitor.ObservableMonitor#monitor
+      */
+    def monitor(automata: IOAutomata[IOState, Event]): Observable[ActionOut[Notify]] = {
+      monitor(automata.initialState, automata.initialTimeout, automata.overallTimeout)(automata.transition)
+    }
+
     private def next(transition: Behaviour[IOState, Event])(state: RunningState[IOState], event: EventIn[Event]): MonitorState[IOState] = {
       transition(state.state)(event) match {
         case Goto(nextState, duration, action) =>
