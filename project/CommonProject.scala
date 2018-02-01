@@ -54,6 +54,7 @@ object CommonProject {
       fork in test := true,
       coverageMinimum := 0,
       coverageFailOnMinimum := true,
-      coverageExcludedFiles := ".*/target/.*"
+      coverageExcludedFiles := ".*/target/.*",
+      dependencyOverrides += Dependencies.commonsLogging
     )
 }
