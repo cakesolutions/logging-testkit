@@ -36,7 +36,7 @@ class DockerLogSourceTest extends FreeSpec with Matchers with GeneratorDrivenPro
   }
 
   "Abnormal exit" in {
-    val exitCode = 1
+    val exitCode = 42
     val testLogSource = new TestDockerLogSource(exitCode)
 
     testLogSource.source("test").materialize should observe[Notification[LogEvent[Json]]](OnError(ProcessTerminated(exitCode)))
