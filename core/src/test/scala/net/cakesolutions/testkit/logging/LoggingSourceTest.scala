@@ -10,7 +10,6 @@ import monix.reactive.Observable
 import org.scalatest.{FreeSpec, Matchers}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalacheck.Gen._
-
 import net.cakesolutions.testkit.generators.TestGenerators
 import net.cakesolutions.testkit.matchers.ObservableMatcher._
 
@@ -24,7 +23,7 @@ class LoggingSourceTest extends FreeSpec with Matchers with GeneratorDrivenPrope
     forAll(listOf(logEventGen())) { logEvents =>
       val logSource = new TestLogSource(Observable(logEvents: _*))
 
-      logSource.source("test") should observe[LogEvent[Json]](logEvents: _*)
+      logSource.source() should observe[LogEvent[Json]](logEvents: _*)
     }
   }
 }
