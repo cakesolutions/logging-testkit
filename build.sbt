@@ -48,6 +48,10 @@ lazy val elasticsearch = project.in(file("instrumentation/elasticsearch"))
   .settings(CommonProject.settings)
   .settings(
     name := "logging-testkit-elasticsearch",
-    libraryDependencies += aws.logs,
+    libraryDependencies ++= Seq(
+      elastic4s.aws,
+      elastic4s.core,
+      elastic4s.http
+    ),
     coverageMinimum := 100
   )
