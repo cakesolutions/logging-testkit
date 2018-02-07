@@ -10,13 +10,25 @@ import scala.util.control.NonFatal
 import com.typesafe.scalalogging.Logger
 import monix.execution.Scheduler
 import monix.reactive.observers.Subscriber
+
 import net.cakesolutions.testkit.config.Configuration.Logging
 import net.cakesolutions.testkit.logging.LineLoggingSource
-import net.cakesolutions.testkit.logging.docker.DockerLogLineSource.ProcessTerminated
 
-trait DockerLogLineSource extends LineLoggingSource[String] {
+/**
+  * TODO:
+  *
+  * @param dockerComposeFiles
+  */
+class DockerLogLineSource(
+  dockerComposeFiles: Seq[String] = Seq.empty
+) extends LineLoggingSource[String] {
 
   private val log = Logger(Logging.name)
+
+  private val dockerLogsCmd: Seq[String] =
+    Seq("docker-compose") ++
+      dockerComposeFiles.map("-f " + _) ++
+      Seq("logs", "-f", "-t")
 
   /**
     * Process for polling the Docker container for logging lines.
@@ -24,7 +36,9 @@ trait DockerLogLineSource extends LineLoggingSource[String] {
     * @param handler handler that will manage each received log line
     * @return process for polling the Docker container for logging lines
     */
-  protected def pollingProcess(handler: String => Unit): Process
+  protected def pollingProcess(handler: String => Unit): Process = {
+    Process(dockerLogsCmd).run(ProcessLogger(handler, handler))
+  }
 
   override protected def subscriberPolling(
     subscriber: Subscriber[String],
@@ -64,30 +78,9 @@ trait DockerLogLineSource extends LineLoggingSource[String] {
   }
 }
 
-// $COVERAGE-OFF$
-object DockerLogLineSource extends DockerLogLineSource {
-  private val dockerLogsCmd =
-    Seq(
-      "docker-compose",
-      "logs",
-      "-f",
-      "docker/docker-compose.yml",
-      "-f",
-      "docker/docker-compose-test.yml",
-      "-f",
-      "-t"
-    )
-
-  /**
-    * Error signal indicating that a process has unexpectedly terminated.
-    *
-    * @param exitCode exit code the process terminated with
-    */
-  final case class ProcessTerminated(exitCode: Int) extends Exception(s"ProcessTerminated($exitCode)")
-
-  /** @inheritdoc */
-  override def pollingProcess(handler: String => Unit): Process = {
-    Process(dockerLogsCmd).run(ProcessLogger(handler, handler))
-  }
-}
-// $COVERAGE-ON$
+/**
+  * Error signal indicating that a process has unexpectedly terminated.
+  *
+  * @param exitCode exit code the process terminated with
+  */
+final case class ProcessTerminated(exitCode: Int) extends Exception(s"ProcessTerminated($exitCode)")

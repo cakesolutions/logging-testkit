@@ -5,10 +5,19 @@ package net.cakesolutions.testkit.logging.docker
 import io.circe.Json
 import monix.execution.Scheduler
 import monix.reactive.Observable
+
 import net.cakesolutions.testkit.logging.LogEvent
 import net.cakesolutions.testkit.logging.docker.formats.LogEventFormat
 
-object DockerLogSource {
+/**
+  * TODO:
+  *
+  * @param dockerComposeFiles
+  */
+final class DockerLogSource(dockerComposeFiles: Seq[String]) {
+
+  private val dockerLogLineSource = new DockerLogLineSource(dockerComposeFiles)
+
   /**
     * For project Docker containers, wrap their logging as an observable.
     *
@@ -17,7 +26,7 @@ object DockerLogSource {
     * @return observable of observed logging events
     */
   def source()(implicit scheduler: Scheduler): Observable[LogEvent[Json]] = {
-    DockerLogLineSource
+    dockerLogLineSource
       .source()
       .flatMap { line =>
         LogEventFormat.parse(line) match {

@@ -10,7 +10,6 @@ import scala.io.Source
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Notification
 import monix.reactive.Notification.OnError
-import net.cakesolutions.testkit.logging.docker.DockerLogLineSource.ProcessTerminated
 import net.cakesolutions.testkit.matchers.ObservableMatcher._
 import org.scalatest.{FreeSpec, Matchers}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
