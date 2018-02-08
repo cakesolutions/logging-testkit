@@ -22,7 +22,7 @@ final class ElasticSearchLogSource(
   private val logger = Logger(Logging.name)
 
   def source()(implicit scheduler: Scheduler): Observable[String] = {
-    val awsElasticClient = Aws4ElasticClient.apply(config)
+    val awsElasticClient = Aws4ElasticClient(config)
     Observable
       .fromFuture(awsElasticClient.execute(searchDef).flatMap {
         case Left(failure) =>
