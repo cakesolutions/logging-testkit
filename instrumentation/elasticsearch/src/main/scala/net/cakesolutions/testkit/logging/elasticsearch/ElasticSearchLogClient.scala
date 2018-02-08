@@ -10,11 +10,23 @@ import com.sksamuel.elastic4s.searches.SearchDefinition
 import monix.execution.Scheduler
 import monix.reactive.Observable
 
-final class ElasticSearchLogClient(config: Aws4ElasticConfig) {
+/**
+  * Client for querying logs from ElasticSearch.
+  *
+  * @param config AWS elasticsearch configuration
+  */
+class ElasticSearchLogClient(config: Aws4ElasticConfig) {
   import ElasticSearchLogClient._
 
-  val elasticSearchClient = Aws4ElasticClient(config)
+  private val elasticSearchClient = Aws4ElasticClient(config)
 
+  /**
+    * Query ElasticSearch and return the results as an Observable.
+    *
+    * @param searchDef search query
+    * @param scheduler monix scheduler
+    * @return query results as observable stream
+    */
   def search(searchDef: SearchDefinition)(
       implicit scheduler: Scheduler
   ): Observable[String] = {
@@ -36,6 +48,12 @@ final class ElasticSearchLogClient(config: Aws4ElasticConfig) {
 }
 
 object ElasticSearchLogClient {
+
+  /**
+    * Execution of an ElasticSearch request failed.
+    *
+    * @param requestFailure failure response
+    */
   case class ElasticSearchRequestFailureException(
       requestFailure: RequestFailure
   ) extends Exception(
