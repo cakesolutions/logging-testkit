@@ -16,7 +16,6 @@ final class ElasticSearchLogSource(
     searchDef: SearchDefinition,
     config: Aws4ElasticConfig
 ) {
-
   import ElasticSearchLogSource._
 
   private val logger = Logger(Logging.name)
@@ -24,14 +23,14 @@ final class ElasticSearchLogSource(
   def source()(implicit scheduler: Scheduler): Observable[String] = {
     val awsElasticClient = Aws4ElasticClient(config)
     Observable
-      .fromFuture(awsElasticClient.execute(searchDef).flatMap {
-        case Left(failure) =>
-          Future.failed(
-            ElasticSearchRequestFailureException(failure)
-          )
-        case Right(result) =>
-          Future.successful(result)
-      })
+      .fromFuture(
+        awsElasticClient.execute(searchDef).flatMap {
+          case Left(failure) =>
+            Future.failed(ElasticSearchRequestFailureException(failure))
+          case Right(result) =>
+            Future.successful(result)
+        }
+      )
       .flatMap { result =>
         Observable.fromIterable(
           result.result.hits.hits.map(_.sourceAsString)
