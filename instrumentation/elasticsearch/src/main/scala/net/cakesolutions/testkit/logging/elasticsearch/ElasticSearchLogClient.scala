@@ -7,15 +7,11 @@ import com.sksamuel.elastic4s.aws.{Aws4ElasticClient, Aws4ElasticConfig}
 import com.sksamuel.elastic4s.http.RequestFailure
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchDefinition
-import com.typesafe.scalalogging.Logger
 import monix.execution.Scheduler
 import monix.reactive.Observable
-import net.cakesolutions.testkit.config.Configuration.Logging
 
 final class ElasticSearchLogClient(config: Aws4ElasticConfig) {
   import ElasticSearchLogClient._
-
-  private val logger = Logger(Logging.name)
 
   val elasticSearchClient = Aws4ElasticClient(config)
 
