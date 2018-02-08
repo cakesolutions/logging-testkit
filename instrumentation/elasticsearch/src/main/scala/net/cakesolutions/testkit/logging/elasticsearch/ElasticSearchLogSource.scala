@@ -8,53 +8,36 @@ import com.sksamuel.elastic4s.http.RequestFailure
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import com.typesafe.scalalogging.Logger
-import monix.execution.{Cancelable, Scheduler}
-import monix.reactive.{Observable, OverflowStrategy}
+import monix.execution.Scheduler
+import monix.reactive.Observable
 import net.cakesolutions.testkit.config.Configuration.Logging
 
-import scala.util.control.NonFatal
-
 final class ElasticSearchLogSource(
-    search: SearchDefinition,
+    searchDef: SearchDefinition,
     config: Aws4ElasticConfig
 ) {
+
   import ElasticSearchLogSource._
 
   private val logger = Logger(Logging.name)
 
-  def source()(implicit scheduler: Scheduler): Observable[String] =
-    Observable.create[String](
-      OverflowStrategy.Unbounded
-    ) { subscriber =>
-      try {
-        scheduler.execute {
-          new Runnable {
-            override def run(): Unit = {
-              val awsElasticClient = Aws4ElasticClient.apply(config)
-              Observable
-                .fromFuture(awsElasticClient.execute(search).flatMap {
-                  case Left(failure) =>
-                    Future.failed(
-                      ElasticSearchRequestFailureException(failure)
-                    )
-                  case Right(result) =>
-                    Future.successful(result)
-                })
-                .flatMap { result =>
-                  Observable.fromIterable(
-                    result.result.hits.hits.map(_.sourceAsString)
-                  )
-                }
-            }
-          }
-        }
-      } catch {
-        case NonFatal(error) =>
-          logger.error("Log parsing error", error)
-          subscriber.onError(error)
+  def source()(implicit scheduler: Scheduler): Observable[String] = {
+    val awsElasticClient = Aws4ElasticClient.apply(config)
+    Observable
+      .fromFuture(awsElasticClient.execute(searchDef).flatMap {
+        case Left(failure) =>
+          Future.failed(
+            ElasticSearchRequestFailureException(failure)
+          )
+        case Right(result) =>
+          Future.successful(result)
+      })
+      .flatMap { result =>
+        Observable.fromIterable(
+          result.result.hits.hits.map(_.sourceAsString)
+        )
       }
-      Cancelable(() => subscriber.onComplete())
-    }
+  }
 }
 
 object ElasticSearchLogSource {
