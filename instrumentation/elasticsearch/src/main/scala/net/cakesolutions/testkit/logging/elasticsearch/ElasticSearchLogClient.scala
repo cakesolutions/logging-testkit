@@ -12,19 +12,19 @@ import monix.execution.Scheduler
 import monix.reactive.Observable
 import net.cakesolutions.testkit.config.Configuration.Logging
 
-final class ElasticSearchLogSource(
-    searchDef: SearchDefinition,
-    config: Aws4ElasticConfig
-) {
-  import ElasticSearchLogSource._
+final class ElasticSearchLogClient(config: Aws4ElasticConfig) {
+  import ElasticSearchLogClient._
 
   private val logger = Logger(Logging.name)
 
-  def source()(implicit scheduler: Scheduler): Observable[String] = {
-    val awsElasticClient = Aws4ElasticClient(config)
+  val elasticSearchClient = Aws4ElasticClient(config)
+
+  def search(searchDef: SearchDefinition)(
+      implicit scheduler: Scheduler
+  ): Observable[String] = {
     Observable
       .fromFuture(
-        awsElasticClient.execute(searchDef).flatMap {
+        elasticSearchClient.execute(searchDef).flatMap {
           case Left(failure) =>
             Future.failed(ElasticSearchRequestFailureException(failure))
           case Right(result) =>
@@ -39,7 +39,7 @@ final class ElasticSearchLogSource(
   }
 }
 
-object ElasticSearchLogSource {
+object ElasticSearchLogClient {
   case class ElasticSearchRequestFailureException(
       requestFailure: RequestFailure
   ) extends Exception(
