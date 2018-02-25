@@ -31,6 +31,8 @@ object CommonProject {
         "-Ypartial-unification",
         "-Xfatal-warnings"
       ),
+      // Disable unused import warnings in Scala console.
+      scalacOptions in (Compile, console) -= "-Ywarn-unused-import",
       scalacOptions in (Compile, doc) ++= {
         val nm = (name in(Compile, doc)).value
         val ver = (version in(Compile, doc)).value

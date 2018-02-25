@@ -30,6 +30,14 @@ object Dependencies {
     val reactive: ModuleID = "io.monix" %% "monix-reactive" % version
   }
 
+  object elastic4s {
+    private val version = "6.1.4"
+
+    val aws: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-aws" % version
+    val core: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-core" % version
+    val http: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-http" % version
+  }
+
   val scalacheck: ModuleID = "org.scalacheck" %% "scalacheck" % "1.13.5"
   val scalatest: ModuleID = "org.scalatest" %% "scalatest" % "3.0.5"
 }
